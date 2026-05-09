@@ -1,0 +1,8 @@
+:root {
+  --color-obsidian: #050505;
+  --color-alabaster: #F5F5F5;
+  --color-electric-cobalt: #00F0FF;
+  --spacing-unit: 8px;
+  --glass-blur: blur(20px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+}
