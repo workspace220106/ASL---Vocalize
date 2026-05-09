@@ -7,9 +7,13 @@ import { Portal } from './Portal';
 import { CameraRig } from './CameraRig';
 import { projects } from '../../constants/projects';
 import { Hero } from '../ui/Hero';
+import { ProjectHUD } from '../ui/ProjectHUD';
 
 const Scene: React.FC = () => {
   const [isNexusActive, setIsNexusActive] = useState(false);
+  const [activeProjectTitle, setActiveProjectTitle] = useState<string | null>(null);
+
+  const activeProject = projects.find(p => p.title === activeProjectTitle);
 
   return (
     <div className="relative w-full h-screen">
@@ -18,6 +22,8 @@ const Scene: React.FC = () => {
           <Hero onEnterNexus={() => setIsNexusActive(true)} />
         </div>
       )}
+
+      <ProjectHUD project={activeProject} />
 
       <Canvas
         camera={{ position: [0, 0, 5], fov: 75 }}
@@ -52,6 +58,7 @@ const Scene: React.FC = () => {
             key={project.title}
             projectName={project.title}
             position={[0, -index * 20, 0]}
+            onActivation={setActiveProjectTitle}
           />
         ))}
 

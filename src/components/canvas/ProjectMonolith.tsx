@@ -8,7 +8,7 @@ interface ProjectMonolithProps {
   position?: [number, number, number];
 }
 
-export const ProjectMonolith: React.FC<ProjectMonolithProps> = ({ projectName, position = [0, 0, 0] }) => {
+export const ProjectMonolith: React.FC<ProjectMonolithProps & { onActivation: (title: string | null) => void }> = ({ projectName, position = [0, 0, 0], onActivation }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const [active, setActive] = useState(false);
@@ -23,8 +23,10 @@ export const ProjectMonolith: React.FC<ProjectMonolithProps> = ({ projectName, p
     // Logic for activation
     if (distance < activationDistance && !active) {
       setActive(true);
+      onActivation(projectName);
     } else if (distance >= activationDistance && active) {
       setActive(false);
+      onActivation(null);
     }
 
     // Smooth scale and emissive intensity transition
