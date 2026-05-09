@@ -5,13 +5,17 @@ import { ProjectMonolith } from './ProjectMonolith';
 import { SkillNebula } from './SkillNebula';
 import { Portal } from './Portal';
 import { CameraRig } from './CameraRig';
+import { IdentityCore } from './IdentityCore';
+import { ContactTrigger } from './ContactTrigger';
 import { projects } from '../../constants/projects';
 import { Hero } from '../ui/Hero';
 import { ProjectHUD } from '../ui/ProjectHUD';
+import { ContactForm } from '../ui/ContactForm';
 
 const Scene: React.FC = () => {
   const [isNexusActive, setIsNexusActive] = useState(false);
   const [activeProjectTitle, setActiveProjectTitle] = useState<string | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
 
   const activeProject = projects.find(p => p.title === activeProjectTitle);
 
@@ -24,6 +28,7 @@ const Scene: React.FC = () => {
       )}
 
       <ProjectHUD project={activeProject} />
+      <ContactForm visible={showContactForm} onClose={() => setShowContactForm(false)} />
 
       <Canvas
         camera={{ position: [0, 0, 5], fov: 75 }}
@@ -52,6 +57,8 @@ const Scene: React.FC = () => {
 
         <CameraRig active={isNexusActive} />
         <Portal active={isNexusActive} />
+        <IdentityCore />
+        <ContactTrigger onTrigger={() => setShowContactForm(true)} />
 
         {projects.map((project, index) => (
           <ProjectMonolith
@@ -61,7 +68,6 @@ const Scene: React.FC = () => {
             onActivation={setActiveProjectTitle}
           />
         ))}
-
         <SkillNebula />
       </Canvas>
     </div>
