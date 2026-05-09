@@ -2,6 +2,7 @@ import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import { ProjectMonolith } from './ProjectMonolith';
+import { SkillNebula } from './SkillNebula';
 import { projects } from '../../constants/projects';
 
 const Scene: React.FC = () => {
@@ -35,6 +36,8 @@ const Scene: React.FC = () => {
           position={[0, -index * 20, 0]}
         />
       ))}
+
+      <SkillNebula />
     </Canvas>
   );
 };
