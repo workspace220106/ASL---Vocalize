@@ -3,10 +3,17 @@ import { PerspectiveCamera } from '@react-three/drei';
 import { useScrollProgress } from '../../hooks/useScrollProgress';
 import * as THREE from 'three';
 
-export const CameraRig = () => {
+interface CameraRigProps {
+  active?: boolean;
+}
+
+export const CameraRig = ({ active }: CameraRigProps) => {
   const progress = useScrollProgress();
 
   useFrame((state) => {
+    // If nexus is active, we might want a specific animation or simply enable scroll-based movement
+    if (!active) return;
+
     // Target Y position: -progress * 100 (moving down the gallery path)
     const targetY = -progress * 100;
 
