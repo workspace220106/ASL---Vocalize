@@ -9,3 +9,4 @@ gTTS
 pyspellchecker
 aiml
 opencv-python-headless
+gunicorn

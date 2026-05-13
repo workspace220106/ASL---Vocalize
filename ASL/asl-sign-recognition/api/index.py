@@ -370,6 +370,17 @@ def model_stats():
     return render_template_string(html)
 
 
+@app.route("/")
+@app.route("/app")
+def serve_frontend():
+    frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+    return send_from_directory(frontend_path, 'index.html')
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    frontend_path = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+    return send_from_directory(frontend_path, filename)
+
 @app.route("/api/translate", methods=["POST"])
 def translate_api():
     return translate()
