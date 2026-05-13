@@ -1,0 +1,11 @@
+flask
+flask-cors
+mediapipe
+tensorflow-cpu
+anthropic
+python-dotenv
+deep-translator
+gTTS
+pyspellchecker
+aiml
+opencv-python-headless
