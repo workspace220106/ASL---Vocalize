@@ -17,6 +17,9 @@
 
     <!-- Elegant Carousel CSS -->
     <link rel="stylesheet" href="./elegant-carousel.css">
+    <!-- AI Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs" type="module"></script>
 
     <style>
         :root {
@@ -375,6 +378,13 @@
                     <li class="nav-link-item"><a class="nav-link" href="#word-builder">Word Builder</a></li>
                     <li class="nav-link-item"><a class="nav-link" href="#dictionary">Dictionary</a></li>
                 </ul>
+                <script>
+                // Initialize AI on load
+                window.addEventListener('load', () => {
+                    if (typeof initAI === 'function') initAI();
+                });
+                </script>
+                <script type="module" src="ai_logic.js"></script>
             </div>
         </div>
     </nav>
@@ -793,44 +803,29 @@
                     btnStart.onclick = startCamera;
                 }
 
-                function predictFile() {
-                    const fileInput = document.getElementById("imageInput");
+                function predictImage() {
+                    const fileInput = document.getElementById('imageInput');
                     const file = fileInput.files[0];
-
                     if (!file) {
                         alert("Please attach an image file first.");
                         return;
                     }
 
-                    const formData = new FormData();
-                    formData.append("image", file);
-                    sendPredictionRequest(formData);
+                    const img = new Image();
+                    img.onload = () => sendPredictionRequest(img);
+                    img.src = URL.createObjectURL(file);
                 }
 
                 function predictWebcam() {
                     const video = document.getElementById('webcamVideo');
-                    const canvas = document.getElementById('webcamCanvas');
-
                     if (!videoStream) {
                         alert("Please start the camera first.");
                         return;
                     }
-
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                    canvas.toBlob(blob => {
-                        const file = new File([blob], "webcam_capture.jpg", { type: "image/jpeg" });
-                        const formData = new FormData();
-                        formData.append("image", file);
-                        sendPredictionRequest(formData);
-                    }, 'image/jpeg', 0.95);
+                    sendPredictionRequest(video);
                 }
 
-                function sendPredictionRequest(formData) {
+                async function sendPredictionRequest(source) {
                     const resultBox = document.getElementById("resultBox");
                     const predText = document.getElementById("predictionText");
                     const confText = document.getElementById("confidenceText");
@@ -840,37 +835,37 @@
                     predText.style.color = "var(--secondary-beige)";
                     confText.innerText = "";
 
-                    fetch("/api/predict", {
-                        method: "POST",
-                        body: formData
-                    })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.prediction === "Unknown") {
-                                predText.innerHTML = "Unknown Sign";
-                                predText.style.color = "#e74c3c";
-                                confText.innerText = "Please try again with better lighting.";
-                                lastPrediction = "";
-                            } else {
-                                lastPrediction = data.prediction;
-                                const confidence = (data.confidence * 100).toFixed(1);
+                    try {
+                        const data = await runInference(source);
+                        
+                        if (data.error) {
+                             throw new Error(data.error);
+                        }
 
-                                predText.innerText = data.prediction;
-                                predText.style.color = "var(--accent-green)";
-                                confText.innerText = `Confidence: ${confidence}%`;
-
-                                const autoAppendCheckbox = document.getElementById("autoAppendToggle");
-                                if (autoAppendCheckbox.checked && data.confidence > 0.70) {
-                                    appendPrediction();
-                                }
-                            }
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            predText.innerText = "Connection Error";
+                        if (data.prediction === "Unknown") {
+                            predText.innerHTML = "Unknown Sign";
                             predText.style.color = "#e74c3c";
-                            confText.innerText = "Is the server running?";
-                        });
+                            confText.innerText = data.chat_reply || "Please try again with better lighting.";
+                            lastPrediction = "";
+                        } else {
+                            lastPrediction = data.prediction;
+                            const confidence = (data.confidence * 100).toFixed(1);
+
+                            predText.innerText = data.prediction;
+                            predText.style.color = "var(--accent-green)";
+                            confText.innerText = `Confidence: ${confidence}%`;
+
+                            const autoAppendCheckbox = document.getElementById("autoAppendToggle");
+                            if (autoAppendCheckbox.checked && data.confidence > 0.70) {
+                                appendPrediction();
+                            }
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        predText.innerText = "AI Error";
+                        predText.style.color = "#e74c3c";
+                        confText.innerText = err.message || "Is the model loaded?";
+                    }
                 }
 
                 function setupDictionary() {
@@ -945,14 +940,15 @@
                     resultBox.style.display = "block";
 
                     try {
-                        const res = await fetch("/api/translate", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text, lang })
-                        });
+                        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${lang}`;
+                        const res = await fetch(url);
                         const data = await res.json();
-                        if (data.error) throw new Error(data.error);
-                        resultText.innerText = data.translated;
+                        
+                        if (data.responseStatus === 200) {
+                            resultText.innerText = data.responseData.translatedText;
+                        } else {
+                            throw new Error(data.responseDetails);
+                        }
                     } catch (e) {
                         console.error("Translation error:", e);
                         resultText.innerText = "Translation failed.";
@@ -961,7 +957,7 @@
 
                 let currentAudio = null;
 
-                async function speakText(source) {
+                function speakText(source) {
                     let text = "";
                     let lang = "en";
 
@@ -974,35 +970,41 @@
                         if (!text || text === "Translating…" || text === "Translation failed.") {
                             alert("Translate something first."); return;
                         }
-                        lang = document.getElementById("targetLang").value;
+                        const targetLangSelect = document.getElementById("targetLang");
+                        lang = targetLangSelect.value;
                     }
 
-                    try {
-                        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-
-                        const res = await fetch("/api/tts", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text, lang })
-                        });
-
-                        if (!res.ok) throw new Error("TTS server error");
-
-                        const blob = await res.blob();
-                        const url = URL.createObjectURL(blob);
-                        currentAudio = new Audio(url);
-                        currentAudio.playbackRate = parseFloat(document.getElementById("ttsSpeed").value);
-                        currentAudio.play();
-                    } catch (e) {
-                        console.error("TTS error:", e);
-                        alert("TTS failed. Check console.");
+                    if (!window.speechSynthesis) {
+                        alert("Your browser does not support Speech Synthesis.");
+                        return;
                     }
+
+                    // Cancel any ongoing speech
+                    window.speechSynthesis.cancel();
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    
+                    // Map target language to local locale
+                    const config = langConfig[lang];
+                    if (config) {
+                        utterance.lang = config.locale;
+                    }
+
+                    utterance.rate = parseFloat(document.getElementById("ttsSpeed").value);
+                    window.speechSynthesis.speak(utterance);
                 }
 
                 function stopSpeaking() {
                     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
                     if (window.speechSynthesis) window.speechSynthesis.cancel();
                 }
+            </script>
+            <script type="module" src="ai_logic.js"></script>
+            <script>
+                // Initialize AI on load
+                window.addEventListener('load', () => {
+                    if (typeof initAI === 'function') initAI();
+                });
             </script>
 </body>
 
