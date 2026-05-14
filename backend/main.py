@@ -17,9 +17,8 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             # Wait for messages from the client
             data = await websocket.receive_text()
-            # For now, we just echo or log the ticker request
-            # This is where ticker requests would be routed to agents
-            await bridge.send_event("echo", {"received": data}, connection=websocket)
+            # Process ticker request
+            await bridge.process_ticker(data, websocket)
 
     except WebSocketDisconnect:
         bridge.disconnect(websocket)
