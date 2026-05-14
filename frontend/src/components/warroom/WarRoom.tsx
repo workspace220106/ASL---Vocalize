@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { GlassPanel } from '../shared/GlassPanel';
 import { TradingChart } from './TradingChart';
 import { useStore } from '../../store/useStore';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 export const WarRoom: React.FC = () => {
-  const { currentTicker, sentiment, agentStatus } = useStore();
+  const { currentTicker, sentiment, logs } = useStore();
+  const { sendTicker } = useWebSocket();
+  const [inputTicker, setInputTicker] = useState(currentTicker);
 
   const hudItems = [
     { label: 'P&L', value: '+$12,450.00', color: 'text-green-400' },
@@ -118,7 +121,8 @@ export const WarRoom: React.FC = () => {
                 <label className="text-xs text-slate-500 block mb-1">Asset Ticker</label>
                 <input
                   type="text"
-                  defaultValue={currentTicker}
+                  value={inputTicker}
+                  onChange={(e) => setInputTicker(e.target.value.toUpperCase())}
                   className="w-full bg-white/5 border border-white/10 rounded px-3 py-2 text-sm focus:outline-none focus:border-white/30 transition-colors"
                 />
               </div>
@@ -130,8 +134,11 @@ export const WarRoom: React.FC = () => {
                   <option className="bg-slate-900">Quant Mean Reversion</option>
                 </select>
               </div>
-              <button className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition-colors text-sm uppercase tracking-wider">
-                Execute Trade
+              <button
+                onClick={() => sendTicker(inputTicker)}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition-colors text-sm uppercase tracking-wider"
+              >
+                Execute Analysis
               </button>
             </div>
           </GlassPanel>
@@ -139,23 +146,18 @@ export const WarRoom: React.FC = () => {
           <GlassPanel className="flex-1 overflow-hidden flex flex-col">
             <h3 className="text-sm uppercase text-slate-400 mb-2">Agent Neural Logs</h3>
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-              {[
-                { time: '12:00:01', msg: 'Analyzing order book depth...', type: 'info' },
-                { time: '12:00:05', msg: 'Alpha signal detected in BTC/USDT', type: 'success' },
-                { time: '12:00:08', msg: 'Executing limit buy order', type: 'info' },
-                { time: '12:00:12', msg: 'Hedged position opened on ETH', type: 'info' },
-                { time: '12:00:15', msg: 'Risk threshold exceeded for pair', type: 'error' },
-              ].map((log, i) => (
-                <div key={i} className="text-[10px] font-mono p-2 bg-white/5 rounded border-l-2 border-white/20">
-                  <span className="text-slate-500 mr-2">{log.time}</span>
-                  <span className={
-                    log.type === 'success' ? 'text-green-400' :
-                    log.type === 'error' ? 'text-red-400' : 'text-slate-300'
-                  }>
-                    {log.msg}
-                  </span>
-                </div>
-              ))}
+              {logs.length === 0 ? (
+                <div className="text-xs text-slate-500 italic p-2">Waiting for neural signals...</div>
+              ) : (
+                logs.map((log, i) => (
+                  <div key={i} className="text-[10px] font-mono p-2 bg-white/5 rounded border-l-2 border-white/20">
+                    <span className="text-slate-500 mr-2">{new Date().toLocaleTimeString()}</span>
+                    <span className="text-slate-300">
+                      {log}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </GlassPanel>
         </div>

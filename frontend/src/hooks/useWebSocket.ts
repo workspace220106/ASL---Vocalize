@@ -10,13 +10,11 @@ export const useWebSocket = () => {
     socketRef.current = socket;
 
     socket.onopen = () => {
-      console.log('WebSocket connected to TradingAgents backend');
     };
 
     socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket received data:', data);
 
         if (data.type === 'agent_thought') {
           const { agent_id, status, thought, sentiment } = data.payload;
@@ -42,7 +40,6 @@ export const useWebSocket = () => {
     };
 
     socket.onclose = () => {
-      console.log('WebSocket disconnected');
     };
 
     return () => {
@@ -57,7 +54,6 @@ export const useWebSocket = () => {
         payload: { ticker }
       });
       socketRef.current.send(message);
-      console.log(`Requested analysis for ticker: ${ticker}`);
     } else {
       console.error('WebSocket is not open. Cannot send ticker request.');
     }

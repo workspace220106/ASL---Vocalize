@@ -47,6 +47,7 @@ export const AgentArena: React.FC = () => {
           background: `radial-gradient(circle at center, ${getAgentColor()} 0%, transparent 70%)`
         }}
       />
+      <div className="neural-grid-bg" />
 
       {/* Depth of Field Elements - Floating Particles */}
       {[...Array(20)].map((_, i) => (
